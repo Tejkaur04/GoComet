@@ -16,28 +16,37 @@ const Countdown = ({ targetDate, status }) => {
 
   useEffect(() => {
     if (status !== 'ACTIVE') {
-      setTimeLeft('Ended');
+      setTimeLeft('Auction Ended');
+      setIsUrgent(false);
       return;
     }
+
     const interval = setInterval(() => {
       const now = new Date().getTime();
       const target = new Date(targetDate).getTime();
       const distance = target - now;
+
       if (distance < 0) {
         clearInterval(interval);
-        setTimeLeft('Expired');
+        setTimeLeft('Time up!');
+        setIsUrgent(false);
         return;
       }
-      const h = Math.floor(distance / 3600000);
-      const m = Math.floor((distance % 3600000) / 60000);
-      const s = Math.floor((distance % 60000) / 1000);
-      setTimeLeft(`${h}h ${m}m ${s}s`);
-      setIsUrgent(h === 0 && m < 2);
+
+      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+      setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+      if (hours === 0 && minutes < 2) setIsUrgent(true);
+      else setIsUrgent(false);
     }, 1000);
+
     return () => clearInterval(interval);
   }, [targetDate, status]);
 
-  return <span style={{ color: isUrgent ? 'var(--danger-color)' : 'var(--text-header)', fontSize: '24px', fontWeight: 800 }}>{timeLeft}</span>;
+  const style = isUrgent ? { color: 'var(--danger-color)', animation: 'pulse 1.5s infinite' } : { color: status === 'ACTIVE' ? 'var(--accent-color)' : 'inherit' };
+  return <span style={{ fontWeight: 800, fontSize: '1.5rem', ...style }}>{timeLeft}</span>;
 };
 
 export default function RFQDetail() {
@@ -68,126 +77,175 @@ export default function RFQDetail() {
     return () => { if (ws.current) ws.current.close(); };
   }, [id, queryClient]);
 
-  const l1 = useMemo(() => rfq?.quotes?.[0], [rfq]);
-  const extCount = useMemo(() => rfq?.activity_logs?.filter(l => l.type === 'EXTENDED').length || 0, [rfq]);
+  const l1 = useMemo(() => {
+    if (!rfq?.quotes || rfq.quotes.length === 0) return null;
+    return rfq.quotes[0]; // Already sorted by backend
+  }, [rfq]);
 
-  if (isLoading) return <div className="container">Loading...</div>;
+  const extCount = useMemo(() => {
+    if (!rfq?.activity_logs) return 0;
+    return rfq.activity_logs.filter(log => log.type === 'EXTENDED').length;
+  }, [rfq]);
+
+  if (isLoading) return <div className="container">Loading RFQ details...</div>;
+  if (error) return <div className="container">Error loading details</div>;
 
   return (
-    <div className="container" style={{ paddingTop: '2rem' }}>
-      <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <Link to="/rfqs" style={{ fontSize: '14px', color: 'var(--text-secondary)', textDecoration: 'none', marginBottom: '8px', display: 'block' }}>&larr; Back to marketplace</Link>
-          <h1 style={{ fontSize: '32px' }}>{rfq.name}</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Auction ID: {rfq.id}</p>
-        </div>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          {wsConnected && <span className="live-dot" title="Real-time connected"></span>}
-          <span className={`badge ${rfq.status === 'ACTIVE' ? 'badge-active' : 'badge-closed'}`}>
-            {rfq.status}
-          </span>
+    <div className="container" style={{ paddingTop: 0 }}>
+      {/* Navigation & Header */}
+      <div style={{ marginBottom: '2rem' }}>
+        <Link to="/rfqs" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+          &larr; Back to Marketplace
+        </Link>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>{rfq.name}</h2>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>RFQ ID: {rfq.id}</div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+             {wsConnected && <span className="live-indicator"></span>}
+             <span className={`badge badge-${rfq.status.toLowerCase().replace('_', '-')}`}>
+               {rfq.status.replace('_', ' ')}
+             </span>
+          </div>
         </div>
       </div>
 
-      <div className="summary-bar">
-        <div className="summary-item">
-          <div className="card-label">Current Lowest Bid</div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--success-color)' }}>{l1 ? `$${l1.total_amount.toFixed(2)}` : '--'}</div>
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{l1 ? `by ${l1.carrier_name}` : 'Awaiting bids'}</div>
+      {/* Live Summary Bar */}
+      <div className="glass-panel" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem', marginBottom: '2rem', background: 'rgba(59, 130, 246, 0.1)', borderColor: 'rgba(59, 130, 246, 0.2)' }}>
+        <div style={{ textAlign: 'center', borderRight: '1px solid var(--border-color)' }}>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.5rem' }}>Current Lowest Bid</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--success-color)' }}>
+            {l1 ? `$${l1.total_amount.toFixed(2)}` : 'No Bids'}
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{l1 ? `by ${l1.carrier_name}` : 'Awaiting first quote'}</div>
         </div>
-        <div className="summary-item">
-          <div className="card-label">Time Remaining</div>
+        <div style={{ textAlign: 'center', borderRight: '1px solid var(--border-color)' }}>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.5rem' }}>Time Remaining</div>
           <Countdown targetDate={rfq.current_close_date} status={rfq.status} />
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Closing: {new Date(rfq.current_close_date).toLocaleTimeString()}</div>
         </div>
-        <div className="summary-item">
-          <div className="card-label">Extensions</div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: extCount > 0 ? 'var(--warning-color)' : 'inherit' }}>{extCount}</div>
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Trigger: {rfq.extension_trigger_type.replace(/_/g, ' ')}</div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.5rem' }}>Auction Extensions</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: extCount > 0 ? '#fcd34d' : 'inherit' }}>
+            {extCount}
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Trigger: {rfq.extension_trigger_type.replace(/_/g, ' ')}</div>
         </div>
       </div>
 
-      <div className="grid-2" style={{ gridTemplateColumns: '2fr 1fr' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          <div className="panel" style={{ padding: 0 }}>
-            <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)' }}>
-              <h3 style={{ fontSize: '16px' }}>Bidding History</h3>
-            </div>
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Rank</th>
-                  <th>Carrier</th>
-                  <th>Breakdown</th>
-                  <th>Total</th>
-                  <th>Transit</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rfq.quotes.map((q, i) => (
-                  <tr key={q.id} style={{ background: userId === q.supplier_id ? 'rgba(31, 111, 235, 0.05)' : 'transparent' }}>
-                    <td style={{ fontWeight: 700, color: i === 0 ? 'var(--success-color)' : 'inherit' }}>
-                      L{i + 1} {i === 0 && '🏆'}
-                      {userId === q.supplier_id && <div style={{ fontSize: '10px', color: 'var(--accent-color)' }}>YOUR BID</div>}
-                    </td>
-                    <td>{q.carrier_name}</td>
-                    <td style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
-                      F:${q.freight_charges.toFixed(0)} O:${q.origin_charges.toFixed(0)} D:${q.destination_charges.toFixed(0)}
-                    </td>
-                    <td style={{ fontWeight: 700 }}>${q.total_amount.toFixed(2)}</td>
-                    <td>{q.transit_time}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <div className="grid-2" style={{ gridTemplateColumns: '2fr 1fr', alignItems: 'start' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {/* Supplier Bids Table */}
+          <div className="glass-panel">
+            <h3 style={{ marginBottom: '1.5rem' }}>Competitive Leaderboard</h3>
+            {rfq.quotes.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '3rem' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🏎️</div>
+                <p style={{ color: 'var(--text-secondary)' }}>The auction is live! Be the first to set the L1 price.</p>
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table className="table" style={{ marginTop: 0 }}>
+                  <thead>
+                    <tr>
+                      <th>Rank</th>
+                      <th>Carrier</th>
+                      <th>Breakdown</th>
+                      <th>Total ($)</th>
+                      <th>Transit</th>
+                      <th>Validity</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rfq.quotes.map((quote, index) => {
+                      const isOwn = userId === quote.supplier_id;
+                      const isL1 = index === 0;
+                      return (
+                        <tr key={quote.id} style={{ backgroundColor: isOwn ? 'rgba(59, 130, 246, 0.08)' : isL1 ? 'rgba(16, 185, 129, 0.05)' : 'transparent' }}>
+                          <td style={{ fontWeight: 700 }}>
+                            {isL1 ? '🏆 L1' : `L${index + 1}`}
+                            {isOwn && <span style={{ display: 'block', fontSize: '0.65rem', color: 'var(--accent-color)' }}>YOUR BID</span>}
+                          </td>
+                          <td>{quote.carrier_name}</td>
+                          <td style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                            F:${quote.freight_charges.toFixed(0)} | O:${quote.origin_charges.toFixed(0)} | D:${quote.destination_charges.toFixed(0)}
+                          </td>
+                          <td style={{ fontWeight: 800, fontSize: '1rem' }}>${quote.total_amount.toFixed(2)}</td>
+                          <td>{quote.transit_time}</td>
+                          <td style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{new Date(quote.validity_of_quote).toLocaleDateString()}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
+          {/* Bid Form */}
           {rfq.status === 'ACTIVE' && role === 'SUPPLIER' && (
-            <div className="panel" style={{ border: '1px solid var(--border-focus)' }}>
-              <h3 style={{ marginBottom: '1.5rem' }}>Submit Improvement Quote</h3>
+            <div className="glass-panel" style={{ border: '1px solid var(--accent-color)' }}>
+              <h3 style={{ marginBottom: '1rem' }}>Submit Improvement Bid</h3>
               <QuoteForm rfqId={rfq.id} />
             </div>
           )}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          <div className="panel">
-            <h3 style={{ fontSize: '16px', marginBottom: '1rem' }}>Auction Timeline</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px' }}>
-              <div>
-                <div className="card-label">Scheduled Start</div>
-                <div style={{ fontWeight: 500 }}>{new Date(rfq.start_date).toLocaleString()}</div>
-              </div>
-              <div>
-                <div className="card-label">Original Close</div>
-                <div style={{ fontWeight: 500 }}>{new Date(rfq.close_date).toLocaleString()}</div>
-              </div>
-              <div>
-                <div className="card-label" style={{ color: 'var(--danger-color)' }}>Forced Close Limit</div>
-                <div style={{ fontWeight: 500 }}>{new Date(rfq.forced_close_date).toLocaleString()}</div>
-              </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {/* Detailed Info & Rules */}
+          <div className="glass-panel">
+            <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Auction Parameters</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+               <div>
+                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Start Date</div>
+                 <div style={{ fontWeight: 600 }}>{new Date(rfq.start_date).toLocaleString()}</div>
+               </div>
+               <div>
+                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Original Close</div>
+                 <div style={{ fontWeight: 600 }}>{new Date(rfq.close_date).toLocaleString()}</div>
+               </div>
+               <div>
+                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Forced Close (Hard Deadline)</div>
+                 <div style={{ fontWeight: 600, color: 'var(--danger-color)' }}>{new Date(rfq.forced_close_date).toLocaleString()}</div>
+               </div>
+               <button 
+                className="btn btn-outline" 
+                style={{ width: '100%', fontSize: '0.8rem' }}
+                onClick={() => setShowRules(!showRules)}
+               >
+                 {showRules ? 'Hide' : 'View'} Extension Rules
+               </button>
+               {showRules && (
+                 <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', fontSize: '0.85rem', lineHeight: 1.5 }}>
+                   This auction monitors the last <strong>{rfq.trigger_window_minutes} minutes</strong>. 
+                   Any <strong>{rfq.extension_trigger_type.replace(/_/g, ' ')}</strong> triggers a 
+                   <strong> {rfq.extension_duration_minutes} minute</strong> extension.
+                 </div>
+               )}
             </div>
-            <button className="btn btn-outline" style={{ width: '100%', marginTop: '1.5rem' }} onClick={() => setShowRules(!showRules)}>
-              {showRules ? 'Hide' : 'Show'} Bidding Rules
-            </button>
-            {showRules && (
-              <div style={{ marginTop: '1rem', padding: '12px', background: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '13px' }}>
-                Activity in the last <strong>{rfq.trigger_window_minutes}m</strong> triggers a <strong>{rfq.extension_duration_minutes}m</strong> extension.
-              </div>
-            )}
           </div>
 
-          <div className="panel" style={{ maxHeight: '400px', display: 'flex', flexDirection: 'column', padding: 0 }}>
-            <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)' }}>
-              <h3 style={{ fontSize: '16px' }}>Activity Stream</h3>
-            </div>
-            <div style={{ overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {rfq.activity_logs.map(l => (
-                <div key={l.id} style={{ paddingBottom: '12px', borderBottom: '1px solid var(--border-color)', lastChild: { borderBottom: 'none' } }}>
-                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '2px' }}>{new Date(l.created_at).toLocaleTimeString()}</div>
-                  <div style={{ fontSize: '13px' }}>{l.message}</div>
-                </div>
-              ))}
+          {/* Activity Log */}
+          <div className="glass-panel" style={{ height: '500px', display: 'flex', flexDirection: 'column' }}>
+            <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Activity Stream</h3>
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+              {rfq.activity_logs.length === 0 ? (
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>No activity yet.</p>
+              ) : (
+                rfq.activity_logs.map(log => (
+                  <div key={log.id} style={{ 
+                    padding: '0.75rem', 
+                    borderRadius: '8px', 
+                    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+                    borderLeft: `3px solid ${log.type === 'EXTENDED' ? '#fcd34d' : log.type === 'COMPLETED' ? 'var(--danger-color)' : 'var(--success-color)'}`
+                  }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>
+                      {new Date(log.created_at).toLocaleTimeString()}
+                    </div>
+                    <div style={{ fontSize: '0.85rem' }}>{log.message}</div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
