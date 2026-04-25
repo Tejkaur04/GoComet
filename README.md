@@ -4,6 +4,24 @@ A production-grade **Request for Quotation (RFQ)** platform built on a **British
 
 > Built as a full-stack submission demonstrating: async FastAPI, Celery + Redis background jobs, PostgreSQL row-level locking, WebSockets, and a role-based React frontend.
 
+<img width="1345" height="627" alt="image" src="https://github.com/user-attachments/assets/d5982c9d-998b-4b8f-9a62-428ec3382369" /><br>
+<img width="1343" height="627" alt="image" src="https://github.com/user-attachments/assets/d8cc620e-f359-4321-9265-e564176e3d49" /><br>
+<img width="1346" height="631" alt="image" src="https://github.com/user-attachments/assets/42e6188e-6dbb-4886-92c9-b33bd5900060" /><br>
+<img width="1349" height="623" alt="image" src="https://github.com/user-attachments/assets/2cb48722-b99d-43c2-9c95-d2de1021eeaa" /><br>
+<img width="1346" height="626" alt="image" src="https://github.com/user-attachments/assets/a3206c65-04a4-45d4-8e3c-70d613da73ff" /><br>
+<img width="1348" height="629" alt="image" src="https://github.com/user-attachments/assets/e7e4ac31-9322-444b-99e4-0fa502bc796a" /><br>
+<img width="1347" height="628" alt="image" src="https://github.com/user-attachments/assets/f5fbe666-249b-409d-9741-af2caddac040" /><br>
+<img width="1348" height="627" alt="image" src="https://github.com/user-attachments/assets/7d1f2615-bc74-495c-b33a-3324a8daa24c" /><br>
+<img width="1348" height="631" alt="image" src="https://github.com/user-attachments/assets/c3090a6d-0cb4-41da-8b16-a488ad71588d" /><br>
+
+
+
+
+
+
+
+
+
 ---
 
 ## 🌐 Live Demo
