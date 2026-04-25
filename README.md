@@ -24,16 +24,6 @@ A production-grade **Request for Quotation (RFQ)** platform built on a **British
 
 ---
 
-## 🌐 Live Demo
-
-| Service | URL |
-|---|---|
-| **Frontend UI** | http://localhost:5173 |
-| **API Docs (Swagger)** | http://localhost:8000/docs |
-| **API Docs (ReDoc)** | http://localhost:8000/redoc |
-
----
-
 ## 🏗 High-Level Architecture
 
 ```
