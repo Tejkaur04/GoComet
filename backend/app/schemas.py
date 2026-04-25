@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from datetime import datetime
 from uuid import UUID
 from typing import List, Optional
@@ -24,16 +24,6 @@ class ActivityLogResponse(BaseModel):
     class Config:
         from_attributes = True
 
-class RFQResponse(RFQCreate):
-    id: UUID
-    current_close_date: datetime
-    status: AuctionStatus
-    created_at: datetime
-    activity_logs: List[ActivityLogResponse] = []
-
-    class Config:
-        from_attributes = True
-
 class QuoteCreate(BaseModel):
     rfq_id: UUID
     carrier_name: str
@@ -48,6 +38,17 @@ class QuoteResponse(QuoteCreate):
     supplier_id: str
     total_amount: float
     created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class RFQResponse(RFQCreate):
+    id: UUID
+    current_close_date: datetime
+    status: AuctionStatus
+    created_at: datetime
+    activity_logs: List[ActivityLogResponse] = []
+    quotes: List[QuoteResponse] = []
 
     class Config:
         from_attributes = True

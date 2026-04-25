@@ -53,6 +53,53 @@ A production-grade **Request for Quotation (RFQ)** platform built on a **British
 
 ---
 
+## 🗄 Schema Design
+
+### `rfqs` Table
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | PK | Unique auction identifier |
+| `name` | VARCHAR | NOT NULL | RFQ reference name |
+| `start_date` | TIMESTAMPTZ | NOT NULL | When bidding opens |
+| `close_date` | TIMESTAMPTZ | NOT NULL | Original scheduled close |
+| `current_close_date` | TIMESTAMPTZ | NOT NULL | Current close — updated on each extension |
+| `forced_close_date` | TIMESTAMPTZ | NOT NULL | Hard deadline — never exceeded |
+| `pickup_date` | TIMESTAMPTZ | NOT NULL | Service/pickup date |
+| `trigger_window_minutes` | INTEGER | NOT NULL | X — monitoring window in minutes |
+| `extension_duration_minutes` | INTEGER | NOT NULL | Y — minutes added per extension |
+| `extension_trigger_type` | ENUM | NOT NULL | `ANY_BID` / `ANY_RANK_CHANGE` / `L1_RANK_CHANGE` |
+| `status` | ENUM | default ACTIVE | `ACTIVE` / `CLOSED` / `FORCE_CLOSED` |
+| `celery_task_id` | VARCHAR | nullable | Tracks the scheduled Celery close task for revocation |
+| `created_at` | TIMESTAMPTZ | default now() | Record creation time |
+
+### `quotes` Table
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | PK | Unique quote identifier |
+| `rfq_id` | UUID | FK → rfqs.id | Parent auction |
+| `supplier_id` | VARCHAR | NOT NULL | Supplier identity (from auth header) |
+| `carrier_name` | VARCHAR | NOT NULL | Carrier/supplier company name |
+| `freight_charges` | FLOAT | NOT NULL | Freight cost component |
+| `origin_charges` | FLOAT | NOT NULL | Origin handling cost |
+| `destination_charges` | FLOAT | NOT NULL | Destination handling cost |
+| `total_amount` | FLOAT | NOT NULL | Computed sum (stored for fast ranking ORDER BY) |
+| `transit_time` | VARCHAR | NOT NULL | Estimated transit duration |
+| `validity_of_quote` | TIMESTAMPTZ | NOT NULL | Quote expiry date |
+| `created_at` | TIMESTAMPTZ | default now() | Submission timestamp |
+
+### `activity_logs` Table
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | PK | Log entry identifier |
+| `rfq_id` | UUID | FK → rfqs.id | Parent auction |
+| `message` | VARCHAR | NOT NULL | Human-readable event description |
+| `type` | ENUM | NOT NULL | `BID_SUBMITTED` / `EXTENDED` / `COMPLETED` |
+| `created_at` | TIMESTAMPTZ | default now() | Event timestamp |
+
+> **Key decisions**: `current_close_date` is mutable and tracks live extensions while `close_date` is the immutable original. `total_amount` is stored (not derived) so ranking is a single `ORDER BY`. `celery_task_id` enables revoke-and-reschedule on every extension. `supplier_id` on quotes enables the "can't bid higher than own previous" rule.
+
+---
+
 ## ✨ Key Features
 
 ### British Auction Engine

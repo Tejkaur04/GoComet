@@ -13,7 +13,7 @@ const fetchRFQDetails = async (id) => {
 export default function RFQDetail() {
   const { id } = useParams();
   const queryClient = useQueryClient();
-  const { role } = useAuth();
+  const { role, userId } = useAuth();
   const [wsConnected, setWsConnected] = useState(false);
   const ws = useRef(null);
 
@@ -105,30 +105,56 @@ export default function RFQDetail() {
           <div className="glass-panel">
             <h3 style={{ marginBottom: '1rem' }}>Supplier Bids</h3>
             {rfq.quotes.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>No bids submitted yet.</p>
+              <div style={{ textAlign: 'center', padding: '2rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
+                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📭</div>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>No bids placed yet. Be the first supplier to bid.</p>
+              </div>
             ) : (
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Rank</th>
-                    <th>Carrier</th>
-                    <th>Total ($)</th>
-                    <th>Transit</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rfq.quotes.map((quote, index) => (
-                    <tr key={quote.id} style={index === 0 ? { backgroundColor: 'rgba(16, 185, 129, 0.1)' } : {}}>
-                      <td style={{ fontWeight: index === 0 ? 'bold' : 'normal', color: index === 0 ? 'var(--success-color)' : 'inherit' }}>
-                        L{index + 1}
-                      </td>
-                      <td>{quote.carrier_name}</td>
-                      <td style={{ fontWeight: 600 }}>${quote.total_amount.toFixed(2)}</td>
-                      <td>{quote.transit_time}</td>
+              <div style={{ overflowX: 'auto' }}>
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Rank</th>
+                      <th>Carrier</th>
+                      <th>Freight ($)</th>
+                      <th>Origin ($)</th>
+                      <th>Destination ($)</th>
+                      <th>Total ($)</th>
+                      <th>Transit</th>
+                      <th>Valid Until</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {rfq.quotes.map((quote, index) => {
+                      const isOwn = userId === quote.supplier_id;
+                      const isL1 = index === 0;
+                      return (
+                        <tr key={quote.id} style={{
+                          backgroundColor: isOwn
+                            ? 'rgba(59, 130, 246, 0.08)'
+                            : isL1 ? 'rgba(16, 185, 129, 0.08)' : 'transparent',
+                          outline: isOwn ? '1px solid rgba(59,130,246,0.3)' : 'none'
+                        }}>
+                          <td style={{ fontWeight: isL1 ? 'bold' : 'normal', color: isL1 ? 'var(--success-color)' : 'inherit' }}>
+                            L{index + 1} {isL1 && '🏆'} {isOwn && <span style={{ fontSize: '0.7rem', color: '#60a5fa', marginLeft: '4px' }}>YOU</span>}
+                          </td>
+                          <td>{quote.carrier_name}</td>
+                          <td>${quote.freight_charges.toFixed(2)}</td>
+                          <td>${quote.origin_charges.toFixed(2)}</td>
+                          <td>${quote.destination_charges.toFixed(2)}</td>
+                          <td style={{ fontWeight: 700, color: isL1 ? 'var(--success-color)' : 'inherit' }}>
+                            ${quote.total_amount.toFixed(2)}
+                          </td>
+                          <td>{quote.transit_time}</td>
+                          <td style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                            {new Date(quote.validity_of_quote).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
 

@@ -103,7 +103,10 @@ async def list_rfqs(db: AsyncSession = Depends(database.get_db)):
     from sqlalchemy.orm import selectinload
     result = await db.execute(
         select(models.RFQ)
-        .options(selectinload(models.RFQ.activity_logs))
+        .options(
+            selectinload(models.RFQ.activity_logs),
+            selectinload(models.RFQ.quotes)
+        )
         .order_by(models.RFQ.created_at.desc())
     )
     return result.scalars().all()

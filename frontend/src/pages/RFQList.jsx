@@ -76,6 +76,12 @@ const getExtensionCount = (rfq) => {
   return rfq.activity_logs.filter(log => log.type === 'EXTENDED').length;
 };
 
+const getL1Price = (rfq) => {
+  if (!rfq.quotes || rfq.quotes.length === 0) return null;
+  const sorted = [...rfq.quotes].sort((a, b) => a.total_amount - b.total_amount);
+  return sorted[0];
+};
+
 export default function RFQList() {
   const { data: rfqs, isLoading, error } = useQuery({
     queryKey: ['rfqs'],
@@ -110,8 +116,9 @@ export default function RFQList() {
               <tr>
                 <th>Reference / Name</th>
                 <th>Status</th>
+                <th>Current Lowest Bid (L1)</th>
                 <th>Extensions</th>
-                <th>Time Remaining</th>
+                <th>Current Close Time</th>
                 <th>Forced Close</th>
                 <th>Action</th>
               </tr>
@@ -119,6 +126,7 @@ export default function RFQList() {
             <tbody>
               {rfqs.map((rfq) => {
                 const extCount = getExtensionCount(rfq);
+                const l1 = getL1Price(rfq);
                 return (
                   <tr key={rfq.id}>
                     <td>
@@ -129,16 +137,29 @@ export default function RFQList() {
                       {getStatusBadge(rfq)}
                     </td>
                     <td>
+                      {l1 ? (
+                        <div>
+                          <div style={{ fontWeight: 700, color: 'var(--success-color)', fontSize: '1rem' }}>${l1.total_amount.toFixed(2)}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{l1.carrier_name}</div>
+                        </div>
+                      ) : (
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No bids yet</span>
+                      )}
+                    </td>
+                    <td>
                       {extCount > 0 ? (
                         <span style={{ fontSize: '0.8rem', background: 'rgba(245, 158, 11, 0.2)', color: '#fcd34d', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: 'bold' }}>
                           +{extCount} extensions
                         </span>
                       ) : (
-                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>-</span>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>No extensions</span>
                       )}
                     </td>
                     <td>
                       <Countdown targetDate={rfq.current_close_date} status={rfq.status} />
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                        {new Date(rfq.current_close_date).toLocaleString()}
+                      </div>
                     </td>
                     <td style={{ fontSize: '0.85rem' }}>
                       {new Date(rfq.forced_close_date).toLocaleString()}
