@@ -15,13 +15,6 @@ A production-grade **Request for Quotation (RFQ)** platform built on a **British
 <img width="1348" height="631" alt="image" src="https://github.com/user-attachments/assets/c3090a6d-0cb4-41da-8b16-a488ad71588d" /><br>
 
 
-
-
-
-
-
-
-
 ---
 
 ## 🏗 High-Level Architecture
@@ -35,23 +28,23 @@ A production-grade **Request for Quotation (RFQ)** platform built on a **British
                      ▼                            ▼
 ┌──────────────────────────────────────────────────────────────────┐
 │                      FastAPI Backend                             │
-│   ┌──────────────┐  ┌──────────────┐  ┌────────────────────┐    │
-│   │ Role Auth    │  │ Bidding      │  │ WebSocket          │    │
-│   │ (Headers)    │  │ Engine       │  │ Connection Manager │    │
-│   │              │  │ (with_for_   │  │ (Broadcast on bid) │    │
-│   │ BUYER only → │  │  update lock)│  │                    │    │
-│   │ POST /rfqs/  │  │              │  │                    │    │
-│   │ SUPPLIER →   │  │              │  │                    │    │
-│   │ POST /quotes/│  │              │  │                    │    │
-│   └──────────────┘  └──────┬───────┘  └────────────────────┘    │
-└──────────────────────────  │  ────────────────────────────────────┘
+│   ┌──────────────┐  ┌──────────────┐  ┌────────────────────┐     │
+│   │ Role Auth    │  │ Bidding      │  │ WebSocket          │     │
+│   │ (Headers)    │  │ Engine       │  │ Connection Manager │     │
+│   │              │  │ (with_for_   │  │ (Broadcast on bid) │     │
+│   │ BUYER only → │  │  update lock)│  │                    │     │
+│   │ POST /rfqs/  │  │              │  │                    │     │
+│   │ SUPPLIER →   │  │              │  │                    │     │
+│   │ POST /quotes/│  │              │  │                    │     │
+│   └──────────────┘  └──────┬───────┘  └────────────────────┘     │
+└──────────────────────────  │  ───────────────────────────────────┘
                              │
          ┌───────────────────┼─────────────────────┐
          ▼                   ▼                     ▼
 ┌─────────────────┐  ┌──────────────┐  ┌─────────────────────────┐
 │   PostgreSQL    │  │    Redis     │  │    Celery Worker        │
 │                 │  │   Broker     │  │                         │
-│  · RFQ table   │  │  · Task queue│  │  · close_auction task   │
+│  · RFQ table    │  │  · Task queue│  │  · close_auction task   │
 │  · Quotes table │  │  · Results   │  │  · Runs at eta=         │
 │  · Activity log │  │              │  │    current_close_date   │
 │  · Row locking  │  │              │  │  · Revoke + reschedule  │
@@ -242,12 +235,6 @@ Full interactive docs available at **http://localhost:8000/docs**
 | `POST` | `/quotes/` | SUPPLIER | Submit a bid |
 | `WS` | `/ws/rfqs/{id}` | Any | WebSocket for live updates |
 
-### Auth Headers (Required on all requests)
-```
-X-User-Role: BUYER | SUPPLIER
-X-User-Id:   buyer-1 | supplier-a | supplier-b | supplier-c
-```
-
 ---
 
 ## ⚙️ Environment Variables
@@ -274,14 +261,5 @@ X-User-Id:   buyer-1 | supplier-a | supplier-b | supplier-c
 | **Container** | Docker Compose |
 
 ---
+Built and maintained by [Tejkaur04](https://github.com/Tejkaur04)
 
-## 🔑 Design Decisions
-
-**Why Celery instead of APScheduler?**
-APScheduler runs in-process; if the server restarts, all scheduled jobs are lost. Celery persists tasks in Redis, making auction closures durable. On extension, the old task is revoked by `task_id` and a new one is scheduled with the updated ETA.
-
-**Why header-based auth instead of JWT?**
-For a scoped assignment, header-based roles are defensible and easily testable without a full user registration/login flow. The key requirement — server-side enforcement — is fully met via FastAPI `Depends()` on every protected endpoint.
-
-**Why `SELECT ... FOR UPDATE`?**
-Two suppliers submitting bids simultaneously must not read stale rank data. The pessimistic lock ensures the second bid waits for the first transaction to commit before proceeding, preventing split-brain ranking bugs.
