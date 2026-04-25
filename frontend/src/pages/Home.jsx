@@ -1,30 +1,11 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../useAuth';
 
-const FeatureCard = ({ icon, title, description }) => (
-  <div className="feature-card">
-    <div className="feature-icon">{icon}</div>
-    <h3>{title}</h3>
-    <p>{description}</p>
-  </div>
-);
-
-const StepCard = ({ number, role, title, description, color }) => (
-  <div className="step-card" style={{ borderTop: `3px solid ${color}` }}>
-    <div className="step-number" style={{ color }}>{number}</div>
-    <div className="step-role" style={{ color }}>{role}</div>
-    <h3>{title}</h3>
-    <p>{description}</p>
-  </div>
-);
-
-const AuctionMechanic = ({ title, description, icon, highlight }) => (
-  <div className="mechanic-card">
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
-      <span style={{ fontSize: '1.5rem' }}>{icon}</span>
-      <strong style={{ color: highlight }}>{title}</strong>
-    </div>
-    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6 }}>{description}</p>
+const StepCard = ({ number, role, title, description, borderColor }) => (
+  <div className="panel" style={{ borderTop: `4px solid ${borderColor}`, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+    <div style={{ color: borderColor, fontWeight: 800, fontSize: '12px', textTransform: 'uppercase' }}>Step {number} • {role}</div>
+    <h3 style={{ fontSize: '18px' }}>{title}</h3>
+    <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{description}</p>
   </div>
 );
 
@@ -32,181 +13,97 @@ export default function Home() {
   const { role } = useAuth();
 
   return (
-    <div className="landing-page">
+    <div className="container" style={{ paddingTop: '2rem' }}>
       {/* Hero Section */}
-      <section className="hero-section">
-        <div className="hero-badge">British Auction Engine · Real-Time Bidding</div>
-        <h1 className="hero-title">
-          Competitive Freight Auctions,
-          <br />
-          <span className="hero-gradient">Built for Speed &amp; Fairness</span>
+      <section style={{ textAlign: 'center', padding: '4rem 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
+        <div style={{ 
+          display: 'inline-block', 
+          padding: '4px 12px', 
+          background: 'rgba(35, 134, 54, 0.1)', 
+          border: '1px solid rgba(35, 134, 54, 0.2)', 
+          borderRadius: '20px',
+          color: 'var(--success-color)',
+          fontSize: '12px',
+          fontWeight: 600
+        }}>
+          British Auction RFQ System
+        </div>
+        <h1 style={{ fontSize: '48px', maxWidth: '800px', lineHeight: 1.1 }}>
+          The Standard for Competitive Freight Procurement
         </h1>
-        <p className="hero-subtitle">
-          Velocity RFQ runs British-style reverse auctions where suppliers compete
-          on price in real-time. Automatic time extensions reward competitive bidding
-          and prevent last-second sniping.
+        <p style={{ fontSize: '18px', color: 'var(--text-secondary)', maxWidth: '640px', lineHeight: 1.6 }}>
+          Run real-time, reverse auctions that eliminate last-second sniping and ensure the best market price through automated time extensions.
         </p>
-        <div className="hero-actions">
-          <Link to="/rfqs" className="btn btn-primary btn-lg">
-            🏛 View Live Auctions
-          </Link>
-          {role === 'BUYER' && (
-            <Link to="/create" className="btn btn-outline btn-lg">
-              + Create New RFQ
-            </Link>
-          )}
-        </div>
-
-        {/* Role Indicator */}
-        <div className="role-hint">
-          {role === 'BUYER' ? (
-            <span>You are logged in as a <strong style={{ color: '#60a5fa' }}>Buyer</strong> — you can create and manage auctions.</span>
-          ) : (
-            <span>You are logged in as a <strong style={{ color: '#34d399' }}>Supplier</strong> — you can browse and submit competitive bids.</span>
-          )}
+        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+          <Link to="/rfqs" className="btn btn-primary btn-lg">🏛 Browse Auctions</Link>
+          {role === 'BUYER' && <Link to="/create" className="btn btn-outline btn-lg">+ Create RFQ</Link>}
         </div>
       </section>
 
-      {/* How it Works - Visual Flow */}
-      <section className="section">
-        <div className="section-header">
-          <h2>How a British Auction Works</h2>
-          <p>A reverse auction where suppliers bid prices down, not up — driven by time pressure and transparent rankings.</p>
+      {/* Mechanics Grid */}
+      <section style={{ marginTop: '4rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <h2 style={{ fontSize: '28px', marginBottom: '1rem' }}>How it Works</h2>
+          <p style={{ color: 'var(--text-secondary)' }}>A multi-step competitive bidding process for professional logistics.</p>
         </div>
-
-        <div className="flow-grid">
-          <StepCard
-            number="01"
-            role="Buyer"
-            title="Create an RFQ"
-            description="Define your shipment, set the bidding window (close time), a hard deadline (forced close), and your extension rules."
-            color="#60a5fa"
-          />
-          <div className="flow-arrow">→</div>
-          <StepCard
-            number="02"
-            role="Suppliers"
-            title="Submit Competitive Bids"
-            description="Multiple suppliers submit quotes. The system ranks them by total cost. Each supplier can only bid lower than their own previous quote."
-            color="#34d399"
-          />
-          <div className="flow-arrow">→</div>
-          <StepCard
-            number="03"
-            role="System"
-            title="Extensions Fire Automatically"
-            description="If a bid is placed within the trigger window (e.g. last 10 mins), the auction extends automatically — preventing last-second sniping."
-            color="#f59e0b"
-          />
-          <div className="flow-arrow">→</div>
-          <StepCard
-            number="04"
-            role="Result"
-            title="Auction Closes"
-            description="The auction either closes naturally when the timer expires, or hits the hard forced-close deadline. L1 (lowest bid) is the winner."
-            color="#a78bfa"
-          />
-        </div>
-      </section>
-
-      {/* British Auction Mechanics */}
-      <section className="section">
-        <div className="section-header">
-          <h2>The Extension Mechanics Explained</h2>
-          <p>This is what makes a British Auction different from a standard RFQ — time pressure creates genuine competition.</p>
-        </div>
-
-        <div className="mechanics-grid">
-          <AuctionMechanic
-            icon="⏱"
-            title="Trigger Window"
-            highlight="#f59e0b"
-            description="The last N minutes of an auction. Any qualifying bid placed within this window will trigger a time extension. Example: if set to 10 minutes, bids in the final 10 minutes extend the auction."
-          />
-          <AuctionMechanic
-            icon="⏩"
-            title="Extension Duration"
-            highlight="#60a5fa"
-            description="How many minutes are added to the close time when an extension fires. Example: if set to 5 minutes, the close time is pushed forward by 5 minutes from its current position."
-          />
-          <AuctionMechanic
-            icon="🔒"
-            title="Forced Close (Hard Deadline)"
-            highlight="#ef4444"
-            description="Extensions can never push the close time past this absolute deadline. Once the forced close time is reached, the auction ends regardless of any bidding activity."
-          />
-          <AuctionMechanic
-            icon="🎯"
-            title="Trigger Conditions"
-            highlight="#34d399"
-            description="Choose what triggers an extension: (1) ANY BID placed, (2) ANY RANK CHANGE in the leaderboard, or (3) only when the L1 (winning) position changes hands between suppliers."
-          />
-        </div>
-      </section>
-
-      {/* Role Guide */}
-      <section className="section">
-        <div className="section-header">
-          <h2>Your Role on This Platform</h2>
-          <p>Use the Role Switcher in the top-right corner to toggle between Buyer and Supplier perspectives.</p>
-        </div>
-
+        
         <div className="grid-2" style={{ gap: '1.5rem' }}>
-          <div className="role-card role-buyer">
-            <div className="role-card-header">
-              <span className="role-emoji">🏢</span>
-              <h3>Buyer</h3>
-            </div>
-            <ul>
-              <li>✅ Create new RFQ auctions</li>
-              <li>✅ Set auction duration and rules</li>
-              <li>✅ Choose extension trigger type</li>
-              <li>✅ View all supplier bids and rankings</li>
-              <li>✅ Monitor live auction activity</li>
-              <li>❌ Cannot submit bids</li>
-            </ul>
-          </div>
-
-          <div className="role-card role-supplier">
-            <div className="role-card-header">
-              <span className="role-emoji">🚢</span>
-              <h3>Supplier</h3>
-            </div>
-            <ul>
-              <li>✅ Browse all active auctions</li>
-              <li>✅ Submit competitive bids</li>
-              <li>✅ View live rankings and your position</li>
-              <li>✅ Re-bid at a lower price to reclaim L1</li>
-              <li>❌ Cannot bid higher than your previous bid</li>
-              <li>❌ Cannot create RFQs</li>
-            </ul>
-          </div>
+          <StepCard 
+            number="01" role="Buyer" title="Configure RFQ" 
+            description="Define shipment details and extension parameters (Trigger window, extension duration, and forced close time)."
+            borderColor="var(--accent-color)"
+          />
+          <StepCard 
+            number="02" role="Suppliers" title="Place Bids" 
+            description="Suppliers submit quotes. The system automatically ranks them in real-time, showing L1, L2, and L3 positions."
+            borderColor="var(--success-color)"
+          />
+          <StepCard 
+            number="03" role="System" title="Auto-Extension" 
+            description="Bids placed in the final minutes extend the timer, giving all participants a fair chance to react and counter-bid."
+            borderColor="var(--warning-color)"
+          />
+          <StepCard 
+            number="04" role="Result" title="Final Award" 
+            description="When the timer expires or hits the hard deadline, the lowest bidder (L1) is clearly identified as the winner."
+            borderColor="var(--indigo-color)"
+          />
         </div>
       </section>
 
-      {/* Feature Highlights */}
-      <section className="section">
-        <div className="section-header">
-          <h2>Platform Highlights</h2>
-        </div>
-        <div className="grid-3 features-grid">
-          <FeatureCard icon="⚡" title="Real-Time WebSockets" description="Bid updates and timer extensions appear instantly across all browser windows without any page refresh." />
-          <FeatureCard icon="🔐" title="Race-Condition Safe" description="PostgreSQL row-level locking ensures two simultaneous bids are processed safely without data corruption." />
-          <FeatureCard icon="🕐" title="Celery Background Jobs" description="Auction closures are managed by Celery + Redis, ensuring timers survive server restarts and are never lost." />
-          <FeatureCard icon="📊" title="Live Bid Rankings" description="All bids are ranked by total cost (freight + origin + destination). L1 always shows the current best price." />
-          <FeatureCard icon="📝" title="Full Activity Log" description="Every bid submission and every extension is logged with a timestamp, giving a full audit trail of the auction." />
-          <FeatureCard icon="🛡" title="Business Rules Enforced" description="Suppliers cannot bid equal to or above their previous lowest bid, maintaining auction integrity." />
+      {/* Design Philosophy */}
+      <section style={{ marginTop: '6rem', padding: '4rem', background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
+        <div className="grid-2" style={{ alignItems: 'center' }}>
+          <div>
+            <h2 style={{ fontSize: '32px', marginBottom: '1.5rem' }}>Precision Engineering</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div>
+                <h4 style={{ color: 'var(--accent-color)', marginBottom: '4px' }}>Real-Time Synchronization</h4>
+                <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Full WebSocket integration ensures every participant sees the same timer and the same L1 price at the same millisecond.</p>
+              </div>
+              <div>
+                <h4 style={{ color: 'var(--success-color)', marginBottom: '4px' }}>Atomic Transactions</h4>
+                <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>PostgreSQL row-level locks prevent race conditions during heavy bidding activity. Every bid is recorded with 100% integrity.</p>
+              </div>
+              <div>
+                <h4 style={{ color: 'var(--warning-color)', marginBottom: '4px' }}>Durable Closures</h4>
+                <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Celery background workers manage auction closures independently of the API server, ensuring persistence through restarts.</p>
+              </div>
+            </div>
+          </div>
+          <div style={{ textAlign: 'center', fontSize: '120px' }}>⚡</div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="cta-section">
-        <h2>Ready to see it in action?</h2>
-        <p>Three demo auctions are pre-loaded — one active (with live bids), one closed, and one force-closed — so you can explore the full lifecycle immediately.</p>
-        <div className="hero-actions">
-          <Link to="/rfqs" className="btn btn-primary btn-lg">
-            🏛 View Live Auctions
-          </Link>
+      {/* Role Switcher Note */}
+      <section style={{ marginTop: '6rem', textAlign: 'center', paddingBottom: '4rem' }}>
+        <div style={{ background: 'var(--surface-color)', display: 'inline-block', padding: '1.5rem 3rem', border: '1px solid var(--border-color)', borderRadius: '40px' }}>
+          <p style={{ fontSize: '16px' }}>
+            Current View: <strong style={{ color: role === 'BUYER' ? 'var(--accent-color)' : 'var(--success-color)' }}>{role} Mode</strong>
+          </p>
+          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+            Use the role switcher in the navigation bar to test different permissions.
+          </p>
         </div>
       </section>
     </div>
